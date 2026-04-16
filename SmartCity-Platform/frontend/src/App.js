@@ -16,7 +16,7 @@ import Alerts from './pages/Alerts';
 import AdminPanel from './pages/AdminPanel';
 import Login from './pages/Login';
 
-const API_BASE_URL = 'http://localhost:5001/api';
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5001/api';
 
 function App() {
   const [currentPage, setCurrentPage] = useState('dashboard');
