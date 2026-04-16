@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart City Resource Allocation Dashboard</title>
+    
+    <!-- Core CSS -->
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/animations.css">
+    
+    <!-- Chart.js Library -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-database.js"></script>
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Loading Screen -->
+    <div id="loadingScreen" class="loading-screen">
+        <div class="loader">
+            <div class="loader-circle"></div>
+            <p>Loading Dashboard...</p>
+        </div>
+    </div>
+
+    <!-- Authentication Modal -->
+    <div id="authModal" class="modal">
+        <div class="modal-content auth-card">
+            <div class="auth-tabs">
+                <button class="auth-tab active" id="loginTab">Login</button>
+                <button class="auth-tab" id="signupTab">Sign Up</button>
+            </div>
+
+            <!-- Login Form -->
+            <form id="loginForm" class="auth-form active">
+                <input type="email" id="loginEmail" placeholder="Email" required>
+                <input type="password" id="loginPassword" placeholder="Password" required>
+                <button type="submit" class="btn-primary">Login</button>
+                <p class="auth-error" id="loginError"></p>
+            </form>
+
+            <!-- Sign Up Form -->
+            <form id="signupForm" class="auth-form">
+                <input type="email" id="signupEmail" placeholder="Email" required>
+                <input type="password" id="signupPassword" placeholder="Password (min 6 chars)" required>
+                <input type="password" id="signupConfirm" placeholder="Confirm Password" required>
+                <button type="submit" class="btn-primary">Create Account</button>
+                <p class="auth-error" id="signupError"></p>
+            </form>
+
+            <!-- Demo Mode Option -->
+            <div class="demo-mode">
+                <button type="button" class="btn-secondary" id="demoButton">
+                    Continue as Demo User
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Dashboard -->
+    <div id="dashboard" class="dashboard hidden">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-left">
+                <h1 class="logo">
+                    <span class="logo-icon">🌍</span>
+                    Smart City
+                </h1>
+                <p class="subtitle">Resource Allocation Dashboard</p>
+            </div>
+            <div class="header-right">
+                <div class="user-info">
+                    <span id="userEmail">User</span>
+                    <button id="logoutBtn" class="btn-logout">Logout</button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Quick Stats Section -->
+            <section class="stats-section">
+                <div class="stat-card water-card">
+                    <div class="stat-header">
+                        <h3>Water Usage</h3>
+                        <span class="stat-icon">💧</span>
+                    </div>
+                    <div class="stat-value" id="waterStat">--</div>
+                    <div class="stat-bar">
+                        <div class="stat-progress" id="waterProgress" style="width: 0%"></div>
+                    </div>
+                    <p class="stat-label">Overall Consumption</p>
+                </div>
+
+                <div class="stat-card electricity-card">
+                    <div class="stat-header">
+                        <h3>Electricity</h3>
+                        <span class="stat-icon">⚡</span>
+                    </div>
+                    <div class="stat-value" id="electricityStat">--</div>
+                    <div class="stat-bar">
+                        <div class="stat-progress" id="electricityProgress" style="width: 0%"></div>
+                    </div>
+                    <p class="stat-label">Overall Consumption</p>
+                </div>
+
+                <div class="stat-card waste-card">
+                    <div class="stat-header">
+                        <h3>Waste Management</h3>
+                        <span class="stat-icon">♻️</span>
+                    </div>
+                    <div class="stat-value" id="wasteStat">--</div>
+                    <div class="stat-bar">
+                        <div class="stat-progress" id="wasteProgress" style="width: 0%"></div>
+                    </div>
+                    <p class="stat-label">Overall Processing</p>
+                </div>
+            </section>
+
+            <!-- Charts Section -->
+            <section class="charts-section">
+                <div class="chart-container">
+                    <h3>Resource Distribution by Zone</h3>
+                    <canvas id="distributionChart"></canvas>
+                </div>
+                
+                <div class="chart-container">
+                    <h3>Demand vs Allocation</h3>
+                    <canvas id="demandChart"></canvas>
+                </div>
+            </section>
+
+            <!-- Zone Allocation Section -->
+            <section class="zones-section">
+                <h2>Zone-wise Resource Allocation</h2>
+                <div class="zones-grid">
+                    <!-- Zone A -->
+                    <div class="zone-card zone-a">
+                        <div class="zone-header">
+                            <h3>Zone A</h3>
+                            <span class="zone-status active">Active</span>
+                        </div>
+                        <div class="zone-content">
+                            <div class="zone-stat">
+                                <label>Demand</label>
+                                <div class="zone-value" id="zoneADemand">--</div>
+                            </div>
+                            <div class="zone-stat">
+                                <label>Allocation</label>
+                                <div class="zone-value" id="zoneAAllocation">--</div>
+                            </div>
+                            <div class="zone-stat">
+                                <label>Water</label>
+                                <div class="zone-value" id="zoneAWater">--</div>
+                            </div>
+                            <div class="zone-stat">
+                                <label>Electricity</label>
+                                <div class="zone-value" id="zoneAElectricity">--</div>
+                            </div>
+                            <div class="zone-stat">
+                                <label>Waste</label>
+                                <div class="zone-value" id="zoneAWaste">--</div>
+                            </div>
+                            <button class="btn-update" onclick="openZoneModal('A')">Update Zone</button>
+                        </div>
+                    </div>
+
+                    <!-- Zone B -->
+                    <div class="zone-card zone-b">
+                        <div class="zone-header">
+                            <h3>Zone B</h3>
+                            <span class="zone-status active">Active</span>
+                        </div>
+                        <div class="zone-content">
+                            <div class="zone-stat">
+                                <label>Demand</label>
+                                <div class="zone-value" id="zoneBDemand">--</div>
+                            </div>
+                            <div class="zone-stat">
+                                <label>Allocation</label>
+                                <div class="zone-value" id="zoneBAllocation">--</div>
+                            </div>
+                            <div class="zone-stat">
+                                <label>Water</label>
+                                <div class="zone-value" id="zoneBWater">--</div>
+                            </div>
+                            <div class="zone-stat">
+                                <label>Electricity</label>
+                                <div class="zone-value" id="zoneBElectricity">--</div>
+                            </div>
+                            <div class="zone-stat">
+                                <label>Waste</label>
+                                <div class="zone-value" id="zoneBWaste">--</div>
+                            </div>
+                            <button class="btn-update" onclick="openZoneModal('B')">Update Zone</button>
+                        </div>
+                    </div>
+
+                    <!-- Zone C -->
+                    <div class="zone-card zone-c">
+                        <div class="zone-header">
+                            <h3>Zone C</h3>
+                            <span class="zone-status active">Active</span>
+                        </div>
+                        <div class="zone-content">
+                            <div class="zone-stat">
+                                <label>Demand</label>
+                                <div class="zone-value" id="zoneCDemand">--</div>
+                            </div>
+                            <div class="zone-stat">
+                                <label>Allocation</label>
+                                <div class="zone-value" id="zoneCAllocation">--</div>
+                            </div>
+                            <div class="zone-stat">
+                                <label>Water</label>
+                                <div class="zone-value" id="zoneCWater">--</div>
+                            </div>
+                            <div class="zone-stat">
+                                <label>Electricity</label>
+                                <div class="zone-value" id="zoneCElectricity">--</div>
+                            </div>
+                            <div class="zone-stat">
+                                <label>Waste</label>
+                                <div class="zone-value" id="zoneCWaste">--</div>
+                            </div>
+                            <button class="btn-update" onclick="openZoneModal('C')">Update Zone</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Control Panel -->
+            <section class="control-section">
+                <h2>Control Panel</h2>
+                <div class="control-buttons">
+                    <button id="allocateBtn" class="btn-primary">🎯 Smart Allocate Resources</button>
+                    <button id="refreshBtn" class="btn-secondary">🔄 Refresh Data</button>
+                    <button id="exportBtn" class="btn-secondary">📊 Export Report</button>
+                </div>
+            </section>
+
+            <!-- Last Updated -->
+            <footer class="dashboard-footer">
+                <p>Last updated: <span id="lastUpdate">--:--</span></p>
+                <div class="live-indicator">
+                    <span class="live-dot"></span>
+                    Live Data
+                </div>
+            </footer>
+        </main>
+    </div>
+
+    <!-- Zone Update Modal -->
+    <div id="zoneModal" class="modal">
+        <div class="modal-content zone-update-card">
+            <span class="modal-close" onclick="closeZoneModal()">&times;</span>
+            <h2>Update Zone <span id="zoneModalTitle">A</span></h2>
+            
+            <form id="zoneForm" class="zone-form">
+                <div class="form-group">
+                    <label for="zoneDemand">Demand (%)</label>
+                    <input type="number" id="zoneDemand" min="0" max="100" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="zoneWater">Water Usage (%)</label>
+                    <input type="number" id="zoneWater" min="0" max="100" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="zoneElectricity">Electricity Usage (%)</label>
+                    <input type="number" id="zoneElectricity" min="0" max="100" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="zoneWaste">Waste Processing (%)</label>
+                    <input type="number" id="zoneWaste" min="0" max="100" required>
+                </div>
+                
+                <div class="form-buttons">
+                    <button type="submit" class="btn-primary">Update Zone</button>
+                    <button type="button" class="btn-secondary" onclick="closeZoneModal()">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="notification" class="notification"></div>
+
+    <!-- Scripts -->
+    <script src="js/firebase-config.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/dashboard.js"></script>
+    <script src="js/charts.js"></script>
+    <script src="js/api.js"></script>
+</body>
+</html>
